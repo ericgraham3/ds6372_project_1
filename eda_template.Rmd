@@ -1,0 +1,278 @@
+---
+title: "EDA Template"
+author: "Brittany Blackmon and Eric Graham"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    code_folding: hide
+    theme: flatly
+---
+
+# 1. Setup
+
+```{r setup, include=FALSE}
+load_or_install = function(pkg) {
+  if (!require(pkg, character.only = TRUE)) {
+    install.packages(pkg, dependencies = TRUE)
+    library(pkg, character.only = TRUE)
+  }
+}
+
+packages = c(
+  "tidyverse",
+  "skimr",
+  "naniar",
+  "corrplot",
+  "ggthemes",
+  "caret",
+  "knitr"
+)
+invisible(lapply(packages, load_or_install))
+```
+
+# 2. Data Import
+
+```{r}
+df = read.csv("HospitalDurations.csv", header = TRUE)
+names(df)
+head(df)
+skim(df)
+```
+
+# 3. Variable Classification and Basic Cleaning
+
+We don't need to performa any analysis on the ID variable, so we can drop that. 
+
+Our response variable is Infection Risk. 
+
+Because Med.Sc.Aff and Region are categorical variables, we will convert them to factors and clearly relabel them.
+
+The remainder of our predictors are numeric, and we'll further classify them as continuous or discrete later in the analysis.
+
+```{r}
+response_var = "Inf.Risk"
+
+df = df %>% select(-ID)
+
+df$Med.Sc.Aff <- factor(df$Med.Sc.Aff, levels = c(1, 2), labels = c("Yes", "No"))
+df$Region <- factor(df$Region, levels = c(1, 2, 3, 4), labels = c("NE", "NC", "S", "W"))
+
+cat_vars = df %>% select(where(is.factor)) %>% names()
+num_vars = df %>% select(where(is.numeric)) %>% names()
+
+num_vars = setdiff(num_vars, response_var)
+
+cat_vars
+num_vars
+```
+
+```{r}
+glimpse(df)
+```
+
+
+# 4. Missing Data Check
+
+Our skim() of the data above showed that there are no missing values, so removal or imputation won't be necessary.
+
+# 5. Univariate Analysis
+
+## Variable Glossary Table
+
+```{r}
+data.frame(
+  Variable_Name = c(
+    "Hospital ID", "Length of Stay", "Age", "Infection risk", 
+    "Routine culturing ratio", "Routine chest X-ray ratio",
+    "Number of beds", "Medical School Affiliation", "Region", 
+    "Average Daily census", "Number of nurses", "Available facilities"
+  ),
+  Description = c(
+    "Unique identifier for the hospital", 
+    "Average length of stay (in days)",
+    "Average age of patients (years)",
+    "Estimated probability of hospital infection (%)",
+    "(# of cultures / # of asymptomatic patients) × 100",
+    "(# of chest X-rays / # of asymptomatic patients) × 100",
+    "Average number of beds",
+    "Whether the hospital is affiliated with a medical school (Yes or No)",
+    "Geographic region (NE, NC, S, or W)",
+    "Average number of patients in hospital per day",
+    "Average number of full-time nurses",
+    "Percent of 35 possible facilities and services provided"
+  ),
+  `Data Type` = c("character", "double", "double", "double", "double", "double", "integer", "factor", "factor", "integer", "integer", "double"),
+  Type = c("categorical", "continuous", "continuous", "continuous", "continuous", "continuous", "discrete", "categorical", "categorical", "continuous", "continuous", "continuous")
+) |>
+  kable()
+```
+
+## Discrete vs. Continuous Classification
+
+Though the number of beds in a hospital is a discrete variable, the distribution of values in this dataset is so wide that bar plots wouldn't be interpretable. We have chosen to treat it as continuous for the purposes of our analysis.
+
+## Numeric Variables
+
+```{r}
+# dictionary of feature names and labels
+label_dict <- c(
+  "ID"             = "Hospital ID",
+  "Lgth.of.Sty"    = "Length of Stay (days)",
+  "Age"            = "Average Age (years)",
+  "Inf.Risk"       = "Infection Risk",
+  "R.Cul.Rat"      = "Routine Culturing Ratio (%)",
+  "R.CX.ray.Rat"   = "Routine Chest X-ray Ratio (%)",
+  "N.Beds"         = "Number of Beds",
+  "Med.Sc.Aff"     = "Medical School Affiliation",
+  "Region"         = "Region",
+  "Avg.Pat"        = "Average Daily Census",
+  "Avg.Nur"        = "Number of Nurses",
+  "Pct.Ser.Fac"    = "Available Facilities (%)"
+)
+# helper function to strip underscores and convert to title case
+pretty_var = function(x) {
+  gsub("_", " ", tools::toTitleCase(x))
+}
+# helper function to get labels from dictionary
+get_label <- function(varname) {
+  if (varname %in% names(label_dict)) {
+    return(label_dict[[varname]])
+  } else {
+    return(pretty_var(varname))
+  }
+}
+
+```
+
+<details>
+<summary>Click to expand: Numeric Variable Plots</summary>
+
+```{r}
+for (var in num_vars) {
+  p <- ggplot(df, aes(x = !!sym(var))) +
+    geom_histogram(fill = "steelblue", color = "white") +
+    labs(
+      x = pretty_var(var),
+      title = paste("Distribution of", get_label(var))
+    ) +
+    theme_minimal()
+  
+  print(p)
+}
+```
+
+```{r}
+for (var in num_vars) {
+  p <- ggplot(df, aes(y = !!sym(var))) +
+    geom_boxplot(fill = "steelblue") +
+    coord_flip() +
+    labs(y = pretty_var(var), title = paste("Boxplot of", get_label(var))) +
+    theme_minimal()
+  print(p)
+}
+```
+
+
+</details>
+
+## Categorical Variables
+
+<details>
+<summary>Click to expand: Categorical Variable Plots</summary>
+
+```{r}
+for (var in cat_vars) {
+  p <- ggplot(df, aes(x = !!sym(var))) +
+    geom_bar(fill = "steelblue") +
+    labs(
+      x = pretty_var(var),
+      y = "Count",
+      title = paste("Frequency of", get_label(var))
+    ) +
+    theme_minimal()
+  
+  print(p)
+}
+
+```
+
+</details>
+
+# 6. Outlier Analysis
+
+```{r}
+outlier_summary = data.frame()
+
+for (var in num_vars) {
+  values = df[[var]]
+  q1 = quantile(values, 0.25, na.rm = TRUE)
+  q3 = quantile(values, 0.75, na.rm = TRUE)
+  iqr = q3 - q1
+  lower = q1 - 1.5 * iqr
+  upper = q3 + 1.5 * iqr
+  outliers = sum(values < lower | values > upper, na.rm = TRUE)
+  pct = 100 * outliers / sum(!is.na(values))
+  outlier_summary = rbind(
+    outlier_summary,
+    data.frame(variable = var, num_outliers = outliers, pct_outliers = round(pct, 1))
+  )
+}
+
+outlier_summary
+```
+
+# 7. Bivariate / Multivariate Analysis
+
+## 7.1 Infection Rate vs. Numeric Predictors
+
+```{r}
+for (var in num_vars) {
+  p = ggplot(df, aes(x = !!sym(var), y = Inf.Risk)) +
+    geom_point(alpha = 0.6, color = "steelblue") +
+    geom_smooth(method = "loess", se = TRUE, color = "darkred", linetype = "solid") +
+    labs(
+      x = get_label(var),
+      y = "Infection Risk",
+      title = paste("Infection Risk vs", get_label(var))
+    ) +
+    theme_minimal()
+  
+  print(p)
+}
+
+```
+
+## 7.2 Categorical vs. Numeric
+
+```{r}
+for (var in cat_vars) {
+  p = ggplot(df, aes(x = !!sym(var), y = Inf.Risk)) +
+    geom_boxplot(fill = "steelblue", color = "darkblue", outlier.shape = NA, alpha = 0.7) +
+    geom_jitter(width = 0.2, alpha = 0.4, color = "black") +
+    labs(
+      x = get_label(var),
+      y = "Infection Risk",
+      title = paste("Infection Risk by", get_label(var))
+    ) +
+    theme_minimal()
+  
+  print(p)
+}
+```
+
+# 8. Feature Engineering
+
+# 9. Initial Modeling Thoughts
+
+# 10. Appendix
+
+## Code Attribution
+
+## Data Sources
+
+## References
+
+
+
