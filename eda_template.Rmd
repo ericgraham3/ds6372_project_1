@@ -264,30 +264,17 @@ for (var in cat_vars) {
 
 # 8. Feature Engineering
 
-log(Length of Stay)
-log(Routine Culturing Ration) +1
-log(Number of Beds)
-log(Average Daily Census
-log(Number of Nurses)
-log(Available Facilities)
-
-```{r}
-log_Lgth.of.Sty = log(df$Lgth.of.Sty)
-log_R.Cul.Rat = log(df$R.Cul.Rat + 1)
-log_N.Beds = log(df$N.Beds)
-log_Avg.Pat = log(df$Avg.Pat)
-log_Avg.Nur = log(df$Avg.Nur)
-log_Pct.Ser.Fac = log(df$Pct.Ser.Fac)
-```
-
-
-```{r}
-fit = lm(Inf.Risk ~ log_Lgth.of.Sty + Age + log_R.Cul.Rat + R.CX.ray.Rat + log_N.Beds + Med.Sc.Aff + Region + log_Avg.Pat + log_Avg.Nur + log_Pct.Ser.Fac, data = df)
-summary(fit)
-```
 
 
 # 9. Initial Modeling Thoughts
+
+```{r}
+fit1 = lm(Inf.Risk ~ Lgth.of.Sty + Age + R.Cul.Rat + R.CX.ray.Rat + N.Beds + Med.Sc.Aff + Region + Avg.Pat + Avg.Nur + Pct.Ser.Fac, data = df)
+plot(fit1)
+summary(fit1)
+```
+
+
 
 # 10. Appendix
 
