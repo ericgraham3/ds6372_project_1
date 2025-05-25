@@ -27,7 +27,8 @@ packages = c(
   "corrplot",
   "ggthemes",
   "caret",
-  "knitr"
+  "knitr",
+  "car"
 )
 invisible(lapply(packages, load_or_install))
 ```
@@ -282,10 +283,6 @@ log_Pct.Ser.Fac = log(df$Pct.Ser.Fac)
 ```
 
 
-```{r}
-fit = lm(Inf.Risk ~ log_Lgth.of.Sty + Age + log_R.Cul.Rat + R.CX.ray.Rat + log_N.Beds + Med.Sc.Aff + Region + log_Avg.Pat + log_Avg.Nur + log_Pct.Ser.Fac, data = df)
-summary(fit)
-```
 
 # 9. Initial Modeling Thoughts
 
@@ -293,8 +290,23 @@ summary(fit)
 fit1 = lm(Inf.Risk ~ Lgth.of.Sty + Age + R.Cul.Rat + R.CX.ray.Rat + N.Beds + Med.Sc.Aff + Region + Avg.Pat + Avg.Nur + Pct.Ser.Fac, data = df)
 plot(fit1)
 summary(fit1)
+vif(fit1)
 ```
 
+
+```{r}
+fit2 = lm(Inf.Risk ~ log_Lgth.of.Sty + Age + log_R.Cul.Rat + R.CX.ray.Rat + log_N.Beds + Med.Sc.Aff + Region + log_Avg.Pat + log_Avg.Nur + log_Pct.Ser.Fac, data = df)
+plot(fit2)
+summary(fit2)
+vif(fit2)
+```
+
+```{r}
+fit3 = lm(Inf.Risk ~ log_Lgth.of.Sty + Age + log_R.Cul.Rat + R.CX.ray.Rat + Med.Sc.Aff + Region + log_Avg.Nur + log_Pct.Ser.Fac, data = df)
+plot(fit3)
+summary(fit3)
+vif(fit3)
+```
 
 
 # 10. Appendix
