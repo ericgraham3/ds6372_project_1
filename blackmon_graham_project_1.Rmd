@@ -30,7 +30,8 @@ packages = c(
   "knitr",
   "car",
   "lmboot",
-  "glmnet"
+  "glmnet",
+  "randomForest"
 )
 invisible(lapply(packages, load_or_install))
 ```
