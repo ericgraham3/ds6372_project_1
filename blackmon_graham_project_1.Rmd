@@ -28,7 +28,9 @@ packages = c(
   "ggthemes",
   "caret",
   "knitr",
-  "car"
+  "car",
+  "lmboot",
+  "glmnet"
 )
 invisible(lapply(packages, load_or_install))
 ```
@@ -289,19 +291,18 @@ for (var in cat_vars) {
 
 # 8. Feature Engineering
 
-
 ```{r}
-# log_Lgth.of.Sty = log(df$Lgth.of.Sty)
-# log_R.Cul.Rat = log(df$R.Cul.Rat + 1)
-# log_N.Beds = log(df$N.Beds)
-# log_Avg.Pat = log(df$Avg.Pat)
-# log_Avg.Nur = log(df$Avg.Nur)
-# log_Pct.Ser.Fac = log(df$Pct.Ser.Fac)
+log_Lgth.of.Sty = log(df$Lgth.of.Sty)
+log_R.Cul.Rat = log(df$R.Cul.Rat)
+log_Avg.Pat = log(df$Avg.Pat)
+log_Avg.Nur = log(df$Avg.Nur)
+log_Pct.Ser.Fac = log(df$Pct.Ser.Fac)
+log_R.CX.ray.Rat = log(df$R.CX.ray.Rat)
 ```
 
+# 9. Inferential Model
 
-
-# 9. Inferential Model Fit
+## Baseline Inferential Model
 
 ```{r}
 fit1 = lm(Lgth.of.Sty ~  + Inf.Risk + Age + R.Cul.Rat + R.CX.ray.Rat + N.Beds + Med.Sc.Aff + Region + Avg.Pat + Avg.Nur + Pct.Ser.Fac, data = df)
@@ -319,17 +320,89 @@ summary(fit2)
 vif(fit2)
 ```
 
+## Effects of Log Transformations
+
+### Log-Linear
+
+```{r}
+fit3 = lm(log_Lgth.of.Sty ~  Inf.Risk + Age + R.Cul.Rat + R.CX.ray.Rat + Med.Sc.Aff + Region + Avg.Pat + Avg.Nur + Pct.Ser.Fac, data = df)
+plot(fit3)
+summary(fit3)
+vif(fit3)
+```
+
+### Linear-Log
+
+```{r}
+fit4 = lm(Lgth.of.Sty ~ Inf.Risk + Age + log_R.Cul.Rat + log_R.CX.ray.Rat + Med.Sc.Aff + Region + log_Avg.Pat + log_Avg.Nur + log_Pct.Ser.Fac, data = df)
+plot(fit4)
+summary(fit4)
+vif(fit4)
+```
+
+### Hybrid (Log Response and Log Predictors)
+
+```{r}
+fit5 = lm(log_Lgth.of.Sty ~ Inf.Risk + Age + log_R.Cul.Rat + log_R.CX.ray.Rat + Med.Sc.Aff + Region + log_Avg.Pat + log_Avg.Nur + log_Pct.Ser.Fac, data = df)
+plot(fit5)
+summary(fit5)
+vif(fit5)
+```
+
+## Bootstrap Confidence Interval for Infection Risk Coefficient
+
 Since the specific question of interest is the relationship between infection risk and length of stay, we want to provide a robust confidence interval for the infection risk coefficient. Given the small sample size of 113 hospitals, we will use a bootstrap approach to estimate the confidence interval.
 
 ```{r}
-
+boot.p = paired.boot(Lgth.of.Sty ~ Inf.Risk + Age + R.Cul.Rat + R.CX.ray.Rat + Med.Sc.Aff + Region + Avg.Pat + Avg.Nur + Pct.Ser.Fac, data = df, B = 10000, seed = 1234)
+ci = t(apply(boot.p$bootEstParam, 2, quantile, probs = c(0.025, 0.975)))
+print(ci)
 ```
 
-# 10. Predictive Model
+# 10. Predictive Model 1: Complex MLR
+
+## Using Lasso Regression to Select Interactions
+
+```{r}
+X = model.matrix(Lgth.of.Sty ~  (Inf.Risk + Age + R.Cul.Rat + R.CX.ray.Rat + N.Beds + Med.Sc.Aff + Region + Avg.Pat + Avg.Nur + Pct.Ser.Fac)^2, data = df)[ , -1]
+
+y = df$Lgth.of.Sty
+
+set.seed(1234)
+lasso_cv = cv.glmnet(X, y, alpha = 1, family = "gaussian")
+beta = as.matrix(coef(lasso_cv, s = "lambda.1se"))[-1 , , drop = FALSE]  
+keep = beta[beta != 0 , , drop = FALSE]
+
+selected = data.frame(term = rownames(keep), coef = as.vector(keep))
+selected[order(abs(selected$coef), decreasing = TRUE), ]
+```
 
 
+```{r}
+set.seed(1234)
 
-# 11. Appendix
+control = trainControl(method = "repeatedcv", number = 10, repeats = 5, savePredictions = "final")
+
+fit6 = train(Lgth.of.Sty ~ Inf.Risk + Age + R.Cul.Rat + R.CX.ray.Rat + N.Beds + Med.Sc.Aff + Region + Avg.Pat + Avg.Nur + Pct.Ser.Fac + Med.Sc.Aff:Region + Inf.Risk:Region + Inf.Risk:Age + Inf.Risk:Avg.Pat + N.Beds:Region, data = df, method = "lm", trControl = control)
+
+fit6$results
+```
+
+
+# 11. Predictive Model 2: Random Forest
+
+```{r}
+set.seed(1234)
+
+control2 = trainControl(method = "repeatedcv", number = 10, repeats = 5)
+
+fit7 = train(Lgth.of.Sty ~ ., data = df, method = "rf", trControl = control2, importance = TRUE)
+
+fit7$results
+```
+
+
+# 12. Appendix
 
 ## Code Attribution
 
