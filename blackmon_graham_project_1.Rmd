@@ -456,17 +456,25 @@ ggplot(df, aes(x = log_Avg.Nur, y = Lgth.of.Sty)) +
 The distributions of the log-transformed variables certainly can't be considered skewed! However, their relationships to the response variable are still barely linear. They aren't that much less linear than our other non-infection risk predictors, so we will at least try with the log-transformed variables in our inferential model.
 
 ```{r}
-fit5 = lm(Lgth.of.Sty ~ Inf.Risk + Age + Region + log_Avg.Pat + log_Avg.Nur + R.CX.ray.Rat + Inf.Risk*Region + Inf.Risk*log_Avg.Pat, data = df)
-plot(fit5)
-summary(fit5)
-vif(fit5)
+fit4 = lm(Lgth.of.Sty ~ Inf.Risk + Age + Region + log_Avg.Pat + log_Avg.Nur + R.CX.ray.Rat + Inf.Risk*Region + Inf.Risk*log_Avg.Pat, data = df)
+plot(fit4)
+summary(fit4)
+vif(fit4)
 ```
 
 The introduction of the log-transformed variables improved our adjusted R-squared value to .6171, which is a slight improvement over the previous model. However, the fit diagnostics (particularly the residuals vs. fitted values plot and QQ plot) show that the log transformations did not significantly improve the linearity of the relationships between the predictors and the response variable. 
 
-## Final Predictive Model 
+## Final Inferential Model 
 
 Given the choice between the reduced model with interactions and the log-transformed model, we will proceed with the reduced model with interactions as our final inferential model. The log transformations did not significantly improve the fit of the model and had worse residual diagnostics. The reduced model with interactions has a higher adjusted R-squared value.
+
+```{r}
+final_inferential_mlr = lm(Lgth.of.Sty ~ Inf.Risk + Age + Region + Avg.Pat + Avg.Nur + R.CX.ray.Rat + Inf.Risk*Region + Inf.Risk*Avg.Pat, data = df)
+
+plot(final_inferential_mlr)
+summary(final_inferential_mlr)
+```
+
 
 ## Bootstrap Confidence Interval for Infection Risk Coefficient
 
@@ -481,6 +489,19 @@ print(ci)
 Based on the bootstrap confidence interval, we are 95% coonfident that for each 1-unit increase in Infection Risk, the mean Length of Stay increases by somewhere between 0.13 and 1.42 days, holding other factors constant.
 
 # Predictive Model 1: Complex MLR
+
+## Stepwise Feature Selection
+
+We are very pleased with the results of our inferential model, which prioritizes interpretability and provides a robust confidence interval for the infection risk coefficient. Because our predictive MLR has different goals, we will use different tools for feature selection, starting with a stepwise feature selection approach.
+
+```{r}
+empty_model = lm(Lgth.of.Sty ~ 1, data = df)
+full_model = lm(Lgth.of.Sty ~  (Inf.Risk + Age + R.Cul.Rat + R.CX.ray.Rat + N.Beds + Med.Sc.Aff + Region + Avg.Pat + Avg.Nur + Pct.Ser.Fac)^2, data = df)
+stepwise_model = step(empty_model, scope = list(lower = empty_model, upper = full_model), direction = "both", trace = 0)
+summary(stepwise_model)
+vif(stepwise_model, type = "predictor")
+```
+
 
 ## Using Lasso Regression to Select Interactions
 
@@ -504,9 +525,9 @@ set.seed(1234)
 
 control = trainControl(method = "repeatedcv", number = 10, repeats = 5, savePredictions = "final")
 
-fit6 = train(Lgth.of.Sty ~ Inf.Risk + Age + R.Cul.Rat + R.CX.ray.Rat + N.Beds + Med.Sc.Aff + Region + Avg.Pat + Avg.Nur + Pct.Ser.Fac + Med.Sc.Aff:Region + Inf.Risk:Region + Inf.Risk:Age + Inf.Risk:Avg.Pat + N.Beds:Region, data = df, method = "lm", trControl = control)
-
-fit6$results
+final_predictive_mlr = train(Lgth.of.Sty ~ Inf.Risk + Region + Avg.Pat + Avg.Nur + R.CX.ray.Rat + Age + Med.Sc.Aff + N.Beds + Inf.Risk:Avg.Pat + Inf.Risk:Region + Inf.Risk:Avg.Nur + Inf.Risk:R.CX.ray.Rat + Inf.Risk:Age + Med.Sc.Aff:Region + N.Beds:Region, data = df, method = "lm", trControl = control)
+summary(final_predictive_mlr)
+final_predictive_mlr$results
 ```
 
 
@@ -515,12 +536,36 @@ fit6$results
 ```{r}
 set.seed(1234)
 
+grid = expand.grid(mtry = 1:10)
+
 control2 = trainControl(method = "repeatedcv", number = 10, repeats = 5)
 
-fit7 = train(Lgth.of.Sty ~ ., data = df, method = "rf", trControl = control2, importance = TRUE)
-
-fit7$results
+fit6 = train(Lgth.of.Sty ~ ., data = df, method = "rf", trControl = control2, tuneGrid = grid, importance = TRUE)
+fit6$results
+ggplot(fit6$results, aes(x = mtry, y = RMSE)) +
+  geom_line(color = "blue", size = 1) +
+  geom_point(color = "red", size = 2) +
+  labs(title = "Random Forest Tuning: RMSE vs. mtry",
+       x = "Number of Variables Tried at Each Split (mtry)",
+       y = "Root Mean Squared Error (RMSE)") +
+  theme_minimal()
 ```
+
+```{r}
+final_forest = train(Lgth.of.Sty ~ ., data = df, method = "rf", trControl = control2, tuneGrid = expand.grid(mtry = 3), importance = TRUE)
+final_forest$results
+```
+
+# Model Comparison
+
+| Metric             | Explanatory MLR     | Predictive MLR  | Random Forest (`mtry = 3`) |
+| ------------------ | ------------------- | --------------- | -------------------------- |
+| Adjusted R²        | 0.631               | 0.639           | *NA (CV R² shown below)*   |
+| Cross-Validated R² | *Not reported*      | 0.528           | 0.496                      |
+| RMSE (CV)          | *Not reported*      | 1.366           | **1.347** (lowest)         |
+| MAE (CV)           | *Not reported*      | 1.048           | **1.010** (lowest)         |
+| Model Complexity   | Moderate (12 terms) | High (23 terms) | High (hundreds of trees)   |
+| Interpretability   | **High**            | Moderate        | **Low**                    |
 
 
 # Appendix
