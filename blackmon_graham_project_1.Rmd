@@ -10,7 +10,7 @@ output:
     theme: flatly
 ---
 
-# 1. Setup
+# Setup and Data Import
 
 ```{r setup, include=FALSE}
 load_or_install = function(pkg) {
@@ -36,24 +36,24 @@ packages = c(
 invisible(lapply(packages, load_or_install))
 ```
 
-# 2. Data Import
-
 ```{r}
 df = read.csv("HospitalDurations.csv", header = TRUE)
 names(df)
-head(df)
-skim(df)
 ```
 
-# 3. Variable Classification and Basic Cleaning
+# Exploratory Data Analysis
 
-We don't need to perform any analysis on the ID variable, so we can drop that. 
+## Variable Classification and Basic Cleaning
 
-Our response variable is Length of Stay.  
+Our response variable is Length of Stay. For Analysis 1, we're performing an inferential analysis on the relationship between infection risk and length of stay, but we will also explore the relationships between length of stay and other predictors. 
+
+For Analysis 2, we will build two predictive models: one complex MLR and one random forest model.
+
+We don't need to perform any analysis on the ID variable, so we dropped it from the dataframe.
 
 Because Medical School Affiliation and Region are categorical variables, we will convert them to factors and clearly relabel them.
 
-The remainder of our predictors are numeric, and we'll further classify them as continuous or discrete later in the analysis.
+The remainder of our predictors are numeric, and we'll further identify which are continuous and which are discrete later in the analysis.
 
 ```{r}
 response_var = "Lgth.of.Sty"
@@ -68,20 +68,21 @@ num_vars = df %>% select(where(is.numeric)) %>% names()
 
 num_vars = setdiff(num_vars, response_var)
 
-cat_vars
-num_vars
+# cat_vars
+# num_vars
 ```
 
 ```{r}
+head(df)
 glimpse(df)
+skim(df)
 ```
 
+Using the glimpse() and skim() functions, we can see that data has been gathered from 113 hospitals. This is a relatively small number, which will need to be addressed in modeling. 
 
-# 4. Missing Data Check
+The data types are appropriate for our analysis. The categorical variables are factors, and the numeric variables are either integers or doubles.
 
-Our skim() of the data above showed that there are no missing values, so removal or imputation won't be necessary.
-
-# 5. Univariate Analysis
+Our skim() of the data above showed that there are no missing values, so removal of incomplete records or imputation of missing variables won't be necessary.
 
 ## Variable Glossary Table
 
@@ -113,7 +114,9 @@ data.frame(
   kable()
 ```
 
-## Discrete vs. Continuous Classification
+## Univariate Analysis
+
+### Discrete vs. Continuous Classification
 
 Though the number of beds in a hospital is a discrete variable, the distribution of values in this dataset is so wide that bar plots wouldn't be interpretable. We have chosen to treat it as continuous for the purposes of our analysis.
 
@@ -148,7 +151,7 @@ get_label <- function(varname) {
 
 ```
 
-## Distribution of Response Variable
+### Distribution of Response Variable
 
 ```{r}
 p = ggplot(df, aes(x = Lgth.of.Sty)) +
@@ -170,9 +173,9 @@ p = ggplot(df, aes(y = Lgth.of.Sty)) +
 print(p)
 ```
 
-The distribution of lengths of stay is mostly normal, with two notable outliers. If there are issues with fit diagnostics then we might consider a transformation, but given the shape of our response variable it seems more likely that transformations on predictors would be a solution.
+The distribution of lengths of stay is mostly normal, with two notable outliers. If there are issues with fit diagnostics then we might consider a transformation, but given the shape of our response variable it seems more likely that we would look to transformations on predictors.
 
-## Numeric Predictors
+### Numeric Predictors
 
 <details>
 <summary>Click to expand: Numeric Variable Plots</summary>
@@ -182,7 +185,7 @@ for (var in num_vars) {
   p <- ggplot(df, aes(x = !!sym(var))) +
     geom_histogram(fill = "steelblue", color = "white") +
     labs(
-      x = pretty_var(var),
+      x = get_label(var),
       title = paste("Distribution of", get_label(var))
     ) +
     theme_minimal()
@@ -193,10 +196,10 @@ for (var in num_vars) {
 
 ```{r}
 for (var in num_vars) {
-  p <- ggplot(df, aes(y = !!sym(var))) +
+  p = ggplot(df, aes(y = !!sym(var))) +
     geom_boxplot(fill = "steelblue") +
     coord_flip() +
-    labs(y = pretty_var(var), title = paste("Boxplot of", get_label(var))) +
+    labs(y = get_label(var), title = paste("Boxplot of", get_label(var))) +
     theme_minimal()
   print(p)
 }
@@ -205,17 +208,19 @@ for (var in num_vars) {
 
 </details>
 
-## Categorical Variables
+We see that most of our numeric predictors are normally distributed, but the routine culturing ratio, number of beds, average daily census, and number of nurses are right-skewed. Our primary predictor of interest is infection risk, which is relatively normally distributed. If we run into issues with model performance or residual diagnostics, we may implement log transformations of the right-skewed predictors.
+
+### Categorical Variables
 
 <details>
 <summary>Click to expand: Categorical Variable Plots</summary>
 
 ```{r}
 for (var in cat_vars) {
-  p <- ggplot(df, aes(x = !!sym(var))) +
+  p = ggplot(df, aes(x = !!sym(var))) +
     geom_bar(fill = "steelblue") +
     labs(
-      x = pretty_var(var),
+      x = get_label(var),
       y = "Count",
       title = paste("Frequency of", get_label(var))
     ) +
@@ -228,7 +233,9 @@ for (var in cat_vars) {
 
 </details>
 
-# 6. Outlier Analysis
+We note that medical school affiliation is imbalanced: the majority of schools don't have a medical school affiliation. This may impact its usefulness in a train/test split for the predictive model, so we will need to keep an eye on that.  
+
+### Outlier Analysis
 
 ```{r}
 outlier_summary = data.frame()
@@ -251,9 +258,11 @@ for (var in num_vars) {
 outlier_summary
 ```
 
-# 7. Bivariate / Multivariate Analysis
+We see some outliers in our predictors, but none of them are extreme enough to warrant removal. We will be keeping an eye out for high-leverage points in our model fit diagnostics.
 
-## 7.1 Infection Rate vs. Numeric Predictors
+## Bivariate / Multivariate Analysis
+
+### Infection Rate vs. Numeric Predictors
 
 ```{r}
 for (var in num_vars) {
@@ -272,7 +281,19 @@ for (var in num_vars) {
 
 ```
 
-## 7.2 Categorical vs. Numeric
+A visual examination of the relationships between our numeric predictors and length of stay shows that there is a moderate, positive linear relationship between infection risk and length of stay, which is the most important relationship we will be exploring in our inferential model.
+
+Average age has a weak positive linear relationship.
+
+Routine culturing ratio has a slight rise in the 15%-20% range, then flattens. 
+
+Routine chest x-ray ratio, number of beds, average daily census, number of nurses, and available facilities percentage are mostly flat and then rise: in the case of average daily census, the lift at the right end of the line is quite dramatic. 
+
+The overall trend for these predictors is positive, but it's difficult to call the relationships linear, and the shapes of the distributions are such that a simple log or polynomial transformation may not be sufficient to perfectly capture the relationships. 
+
+Though some relationships are more linear than others, we will proceed with the assumption that they are all linear for the purposes of our inferential model.
+
+### Infection Rate vs. Categorical Predictors
 
 ```{r}
 for (var in cat_vars) {
@@ -290,77 +311,176 @@ for (var in cat_vars) {
 }
 ```
 
-# 8. Feature Engineering
+A visual examination of the relationships between our categorical predictors and length of stay shows that the mean length of stay is generally higher among hospitals with a medical school affiliation, while region definitely appears to have an effect on length of stay, with the Northeast and North Central regions having the highest mean lengths of stay.
 
-```{r}
-log_Lgth.of.Sty = log(df$Lgth.of.Sty)
-log_R.Cul.Rat = log(df$R.Cul.Rat)
-log_Avg.Pat = log(df$Avg.Pat)
-log_Avg.Nur = log(df$Avg.Nur)
-log_Pct.Ser.Fac = log(df$Pct.Ser.Fac)
-log_R.CX.ray.Rat = log(df$R.CX.ray.Rat)
-```
 
-# 9. Inferential Model
+# Inferential Model
 
 ## Baseline Inferential Model
 
 ```{r}
-fit1 = lm(Lgth.of.Sty ~  + Inf.Risk + Age + R.Cul.Rat + R.CX.ray.Rat + N.Beds + Med.Sc.Aff + Region + Avg.Pat + Avg.Nur + Pct.Ser.Fac, data = df)
+fit1 = lm(Lgth.of.Sty ~  Inf.Risk + Age + R.Cul.Rat + R.CX.ray.Rat + N.Beds + Med.Sc.Aff + Region + Avg.Pat + Avg.Nur + Pct.Ser.Fac, data = df)
 plot(fit1)
 summary(fit1)
 vif(fit1)
 ```
 
-Our initial fit of the inferential model shows that infection risk is likely a strong predictor of length of stay, and we will explore that in-depth. Our VIF check shows that the number of beds and average number of patients are highly correlated, which intuitively makes sense: both are measures of hospital capacity. Because we see that the average number of patients is a stronger predictor of length of stay, we will drop the number of beds from our model.
+Our initial fit of the inferential model using all variables shows that infection risk is likely a strong predictor of length of stay, and we will continue to explore that relationship in-depth throughout our analysis. 
+
+Our adjusted-r-squared value of 0.5855 indicates that the model explains about 59% of the variance in length of stay, which is a decent starting point for a first pass at the model.
+
+Our VIF check shows that the number of beds and average number of patients are highly correlated, which intuitively makes sense: both are measures of hospital capacity. Because we see that the average number of patients is a stronger predictor of length of stay, we will drop the number of beds from our model.
+
+We see that infection risk, age, region, average patients, and average nurses are all statistically significant in the model. We will keep these variables in our second, reduced model.
+
+### Fit Diagnostics
+
+We see a slight curve in the residuals vs. fitted values plot, which suggests that the relationship between infection risk and length of stay may not be perfectly linear, but nothing to suggest a major violation of linearity.
+
+The QQ plot shows some deviation at the tails, but (again) nothing to suggest a major violation of normality.
+
+We see a couple of outliers here, but nothing outside the Cook's D threshold of 0.5.
+
+Overall, the fit diagnostics could be better, but they are acceptable for a first pass at the model.
+
+## Reduced Model
 
 ```{r}
-fit2 = lm(Lgth.of.Sty ~ Inf.Risk + Age + R.Cul.Rat + R.CX.ray.Rat + Med.Sc.Aff + Region + Avg.Pat + Avg.Nur + Pct.Ser.Fac, data = df)
+fit2 = lm(Lgth.of.Sty ~ Inf.Risk + Age + Region + Avg.Pat + Avg.Nur + R.CX.ray.Rat, data = df)
 plot(fit2)
 summary(fit2)
 vif(fit2)
 ```
 
-## Effects of Log Transformations
+We dropped number of beds (as noted above) as well as medical school affiliation, percent of available facilities, and routine culturing ratio, which were not statistically significant in the baseline model. This resulted in an adjusted r-squared of .5846, which is roughly the same as we had before.
 
-### Log-Linear
+We also tried dropping routine chest x-ray ratio, which was closer to the threshold of statistical signficance than the other dropped predictors (p-value of 0.08). However, removing it from the model actually lowered our adjusted r-squared value, and in the reduced model its p-value was borderline (0.057, as shown below), so we left it in. 
+
+Fit diagnostics are marginally improved in the reduced model, but not noticeably so. Overall, teh reduced model enhances interpretability by dropping statistically insignificant predictors, but it does not significantly improve the model fit.
+
+## Model with Interactions
+
+For the sake of simplicity in the inferential model, we limited our exploration of interactions to a few key variables, with a focus on infection risk since it is the subject of our inquiry and it seems to have the strongest linear relationship with length of stay. It seems intuitive that infection risk might interact with region, age, and average number of patients, so we examined the graphs of those interactions.
 
 ```{r}
-fit3 = lm(log_Lgth.of.Sty ~  Inf.Risk + Age + R.Cul.Rat + R.CX.ray.Rat + Med.Sc.Aff + Region + Avg.Pat + Avg.Nur + Pct.Ser.Fac, data = df)
+ggplot(df, aes(x = Inf.Risk, y = Lgth.of.Sty, shape = Region)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE, aes(group = Region)) +
+  labs(title = "Interaction Between Infection Risk and Region (Shapes)",
+       x = "Infection Risk",
+       y = "Length of Stay")
+
+df$AgeGroup = cut(df$Age, breaks = 3, labels = c("Young", "Middle", "Old"))
+
+ggplot(df, aes(x = Inf.Risk, y = Lgth.of.Sty, shape = AgeGroup)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE, aes(group = AgeGroup)) +
+  labs(title = "Interaction Between Infection Risk and Age Group (Shapes)",
+       x = "Infection Risk",
+       y = "Length of Stay")
+
+df$PatGroup = cut(df$Avg.Pat, breaks = 3, labels = c("Low", "Medium", "High"))
+
+ggplot(df, aes(x = Inf.Risk, y = Lgth.of.Sty, shape = PatGroup)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE, aes(group = PatGroup)) +
+  labs(title = "Interaction Between Infection Risk and Patient Load (Shapes)",
+       x = "Infection Risk",
+       y = "Length of Stay")
+```
+
+We see that infection risk has a stronger effect on length of stay in the Northeast and South regions, and that it has a stronger effect in hospitals with higher average daily census. The influence of age on the relationship between infection risk and length of stay is less pronounced. 
+
+Thus, we refit the model to incorporate interactions for Region/Infection Risk and Average Patients/Infection Risk.
+
+```{r}
+fit3 = lm(Lgth.of.Sty ~ Inf.Risk + Age + Region + Avg.Pat + Avg.Nur + R.CX.ray.Rat + Inf.Risk*Region + Inf.Risk*Avg.Pat, data = df)
+
 plot(fit3)
 summary(fit3)
-vif(fit3)
+vif(fit3, type = "predictor")
 ```
 
-### Linear-Log
+The introduction of the interaction terms improved our adjusted R-squared value to .6309, and the VIF values are still acceptable. 
+
+The interaction terms for infection risk and region are significant in the NC and S regions, indicating that the relationship between infection risk and length of stay is stronger in those regions, as is the interaction term for infection risk and average patients, indicating that the relationship between infection risk and length of stay is stronger in hospitals with higher average daily census.
+
+Fit diagnostics remain consistent with the baseline model, which are acceptable but not perfect. Our last attempt to tame the residuals and improve the fit of the inferential model will be to apply log transformations to some of our predictors.
+
+## Log Transformations on Average Daily Census and Number of Nurses
+
+As seen in the univariate analysis, the distributions of both average number of patients and number of nurses are highly skewed, and the relationships between these predictors and length of stay are not perfectly linear. 
 
 ```{r}
-fit4 = lm(Lgth.of.Sty ~ Inf.Risk + Age + log_R.Cul.Rat + log_R.CX.ray.Rat + Med.Sc.Aff + Region + log_Avg.Pat + log_Avg.Nur + log_Pct.Ser.Fac, data = df)
-plot(fit4)
-summary(fit4)
-vif(fit4)
+log_Avg.Pat = log(df$Avg.Pat)
+log_Avg.Nur = log(df$Avg.Nur)
+df = df %>% mutate(log_Avg.Pat = log_Avg.Pat, log_Avg.Nur = log_Avg.Nur)
+
+ggplot(df, aes(x = log_Avg.Pat)) +
+  geom_histogram(fill = "steelblue", color = "white") +
+  labs(
+    x = "Log of Average Daily Census",
+    title = "Distribution of Log of Average Daily Census"
+  ) +
+  theme_minimal()
+
+ggplot(df, aes(x = log_Avg.Nur)) +
+  geom_histogram(fill = "steelblue", color = "white") +
+  labs(
+    x = "Log of Number of Nurses",
+    title = "Distribution of Log of Number of Nurses"
+  ) +
+  theme_minimal()
+
+ggplot(df, aes(x = log_Avg.Pat, y = Lgth.of.Sty)) +
+  geom_point(alpha = 0.6, color = "steelblue") +
+  geom_smooth(method = "loess", se = TRUE, color = "darkred", linetype = "solid") +
+  labs(
+    x = paste("Log of Average Patients"),
+    y = "Length of Stay",
+    title = paste("Length of Stay vs Log of Average Patients")
+  ) +
+  theme_minimal()
+
+ggplot(df, aes(x = log_Avg.Nur, y = Lgth.of.Sty)) +
+  geom_point(alpha = 0.6, color = "steelblue") +
+  geom_smooth(method = "loess", se = TRUE, color = "darkred", linetype = "solid") +
+  labs(
+    x = paste("Log of Average Nurses"),
+    y = "Length of Stay",
+    title = paste("Length of Stay vs Log of Average Nurses")
+  ) +
+  theme_minimal()
 ```
 
-### Hybrid (Log Response and Log Predictors)
+The distributions of the log-transformed variables certainly can't be considered skewed! However, their relationships to the response variable are still barely linear. They aren't that much less linear than our other non-infection risk predictors, so we will at least try with the log-transformed variables in our inferential model.
 
 ```{r}
-fit5 = lm(log_Lgth.of.Sty ~ Inf.Risk + Age + log_R.Cul.Rat + log_R.CX.ray.Rat + Med.Sc.Aff + Region + log_Avg.Pat + log_Avg.Nur + log_Pct.Ser.Fac, data = df)
+fit5 = lm(Lgth.of.Sty ~ Inf.Risk + Age + Region + log_Avg.Pat + log_Avg.Nur + R.CX.ray.Rat + Inf.Risk*Region + Inf.Risk*log_Avg.Pat, data = df)
 plot(fit5)
 summary(fit5)
 vif(fit5)
 ```
+
+The introduction of the log-transformed variables improved our adjusted R-squared value to .6171, which is a slight improvement over the previous model. However, the fit diagnostics (particularly the residuals vs. fitted values plot and QQ plot) show that the log transformations did not significantly improve the linearity of the relationships between the predictors and the response variable. 
+
+## Final Predictive Model 
+
+Given the choice between the reduced model with interactions and the log-transformed model, we will proceed with the reduced model with interactions as our final inferential model. The log transformations did not significantly improve the fit of the model and had worse residual diagnostics. The reduced model with interactions has a higher adjusted R-squared value.
 
 ## Bootstrap Confidence Interval for Infection Risk Coefficient
 
 Since the specific question of interest is the relationship between infection risk and length of stay, we want to provide a robust confidence interval for the infection risk coefficient. Given the small sample size of 113 hospitals, we will use a bootstrap approach to estimate the confidence interval.
 
 ```{r}
-boot.p = paired.boot(Lgth.of.Sty ~ Inf.Risk + Age + R.Cul.Rat + R.CX.ray.Rat + Med.Sc.Aff + Region + Avg.Pat + Avg.Nur + Pct.Ser.Fac, data = df, B = 10000, seed = 1234)
+boot.p = paired.boot(Lgth.of.Sty ~ Inf.Risk + Age + Region + Avg.Pat + Avg.Nur + R.CX.ray.Rat + Inf.Risk*Region + Inf.Risk*Avg.Pat, data = df, B = 10000, seed = 1234)
 ci = t(apply(boot.p$bootEstParam, 2, quantile, probs = c(0.025, 0.975)))
 print(ci)
 ```
 
-# 10. Predictive Model 1: Complex MLR
+Based on the bootstrap confidence interval, we are 95% coonfident that for each 1-unit increase in Infection Risk, the mean Length of Stay increases by somewhere between 0.13 and 1.42 days, holding other factors constant.
+
+# Predictive Model 1: Complex MLR
 
 ## Using Lasso Regression to Select Interactions
 
@@ -390,7 +510,7 @@ fit6$results
 ```
 
 
-# 11. Predictive Model 2: Random Forest
+# Predictive Model 2: Random Forest
 
 ```{r}
 set.seed(1234)
@@ -403,7 +523,7 @@ fit7$results
 ```
 
 
-# 12. Appendix
+# Appendix
 
 ## Code Attribution
 
