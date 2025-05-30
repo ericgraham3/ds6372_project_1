@@ -566,18 +566,8 @@ final_forest$results
 | Adjusted R²        | 0.631               | 0.639           | *NA (CV R² shown below)*   |
 | Cross-Validated R² | *Not reported*      | 0.528           | 0.496                      |
 | RMSE (CV)          | *Not reported*      | 1.366           | **1.347** (lowest)         |
-| MAE (CV)           | *Not reported*      | 1.048           | **1.010** (lowest)         |
 | Model Complexity   | Moderate (12 terms) | High (23 terms) | High (hundreds of trees)   |
 | Interpretability   | **High**            | Moderate        | **Low**                    |
-
-
-# Appendix
-
-## Code Attribution
-
-## Data Sources
-
-## References
 
 
 
