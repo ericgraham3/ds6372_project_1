@@ -1,0 +1,121 @@
+---
+title: "Stats 6372 - Project 1"
+author: "Brittany Blackmon and Eric Graham"
+date: "`r Sys.Date()`"
+output: 
+  powerpoint_presentation:
+    slide_level: 2
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# Inferential Model
+
+## Baseline Model - All Predictors
+
+$$
+\widehat{\text{Length of Stay (days)}} = 
+\beta_0 + 
+\beta_1 \cdot \text{Infection Risk} + 
+\beta_2 \cdot \text{Average Age (years)} + 
+\beta_3 \cdot \text{Routine Culturing Ratio (%) } + 
+\beta_4 \cdot \text{Routine Chest X-ray Ratio (%) } + 
+\beta_5 \cdot \text{Number of Beds} + 
+\beta_6 \cdot \text{Medical School Affiliation} + 
+\beta_7 \cdot \text{Region} + 
+\beta_8 \cdot \text{Average Daily Census} + 
+\beta_9 \cdot \text{Number of Nurses} + 
+\beta_{10} \cdot \text{Available Facilities (%) }
+$$
+
+## Baseline Model - Performance
+
+![Output of Baseline Model](01_baseline_model_output.png)
+
+## Baseline Model - Fit Diagnostics and VIF
+
+![Fit Diagnostics of Baseline Model](01_baseline_model_diagnostics.png)
+![VIF of Baseline Model](01_baseline_model_vif.png)
+
+## Reduced Model - Statistically Significant Predictors
+
+$$
+\widehat{\text{Length of Stay (days)}} = 
+\beta_0 + 
+\beta_1 \cdot \text{Infection Risk} + 
+\beta_2 \cdot \text{Average Age (years)} + 
+\beta_3 \cdot \text{Region} + 
+\beta_4 \cdot \text{Average Daily Census} + 
+\beta_5 \cdot \text{Number of Nurses} + 
+\beta_6 \cdot \text{Routine Chest X-ray Ratio (%)}
+$$
+
+## Reduced Model - Performance
+
+![Output of Reduced Model](02_reduced_model_output.png)
+
+## Reduced Model - Fit Diagnostics and VIF
+
+![Fit Diagnostics of Reduced Model](02_reduced_model_diagnostics.png)
+
+![VIF of Reduced Model](02_reduced_model_vif.png)
+
+## Interactions
+
+[](03_reduced_model_interaction1.png)
+[](03_reduced_model_interaction2.png)
+
+## Reduced Model with Interactions
+
+$$
+\widehat{\text{Length of Stay (days)}} = 
+\beta_0 + 
+\beta_1 \cdot \text{Infection Risk} + 
+\beta_2 \cdot \text{Average Age (years)} + 
+\beta_3 \cdot \text{Region} + 
+\beta_4 \cdot \text{Average Daily Census} + 
+\beta_5 \cdot \text{Number of Nurses} + 
+\beta_6 \cdot \text{Routine Chest X-ray Ratio (%)} + 
+\beta_7 \cdot \text{Infection Risk} \times \text{Region} + 
+\beta_8 \cdot \text{Infection Risk} \times \text{Average Daily Census}
+$$
+
+## Reduced Model with Interactions - Performance
+
+![Output of Reduced Model with Interactions](03_reduced_model_output.png)
+
+## Reduced Model with Interactions - Fit Diagnostics and VIF
+
+![Fit Diagnostics of Reduced Model with Interactions](03_reduced_model_diagnostics.png)
+
+## Log Transformations
+
+![](04_log_trend_1.png)
+![](04_log_trend_2.png)
+
+## Model with Log-Transformed Predictors
+
+## Final Model
+
+## Confidence Interval for Infection Risk
+
+# Predictive Model 1: Complex MLR
+
+## Results of Stepwise Feature Selection
+
+## LASSO Regression for Interactions
+
+## Complex MLR - Performance
+
+## Compex MLR - Fit Diagnostics
+
+# Predictive Model 2: Random Forest
+
+## Random Forest - Performance and Fit Diagnostics
+
+# Model Comparison
+
+## Model Comparison
+
