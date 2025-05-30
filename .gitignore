@@ -2,4 +2,7 @@
 .Rhistory
 .RData
 .Ruserdata
-eda_template.html
+*.html
+*.pptx
+*.png
+blackmon_graham_project_1_presentation.Rmd

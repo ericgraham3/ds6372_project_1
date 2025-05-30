@@ -1,5 +1,5 @@
 ---
-title: "EDA Template"
+title: "Stats 6372 - Project 1"
 author: "Brittany Blackmon and Eric Graham"
 date: "`r Sys.Date()`"
 output:
@@ -320,6 +320,7 @@ A visual examination of the relationships between our categorical predictors and
 
 ```{r}
 fit1 = lm(Lgth.of.Sty ~  Inf.Risk + Age + R.Cul.Rat + R.CX.ray.Rat + N.Beds + Med.Sc.Aff + Region + Avg.Pat + Avg.Nur + Pct.Ser.Fac, data = df)
+par(mfrow = c(2, 2))
 plot(fit1)
 summary(fit1)
 vif(fit1)
@@ -347,6 +348,7 @@ Overall, the fit diagnostics could be better, but they are acceptable for a firs
 
 ```{r}
 fit2 = lm(Lgth.of.Sty ~ Inf.Risk + Age + Region + Avg.Pat + Avg.Nur + R.CX.ray.Rat, data = df)
+par(mfrow = c(2, 2))
 plot(fit2)
 summary(fit2)
 vif(fit2)
@@ -366,7 +368,7 @@ For the sake of simplicity in the inferential model, we limited our exploration 
 ggplot(df, aes(x = Inf.Risk, y = Lgth.of.Sty, shape = Region)) +
   geom_point(alpha = 0.6) +
   geom_smooth(method = "lm", se = FALSE, aes(group = Region)) +
-  labs(title = "Interaction Between Infection Risk and Region (Shapes)",
+  labs(title = "Interaction Between Infection Risk and Region",
        x = "Infection Risk",
        y = "Length of Stay")
 
@@ -375,7 +377,7 @@ df$AgeGroup = cut(df$Age, breaks = 3, labels = c("Young", "Middle", "Old"))
 ggplot(df, aes(x = Inf.Risk, y = Lgth.of.Sty, shape = AgeGroup)) +
   geom_point(alpha = 0.6) +
   geom_smooth(method = "lm", se = FALSE, aes(group = AgeGroup)) +
-  labs(title = "Interaction Between Infection Risk and Age Group (Shapes)",
+  labs(title = "Interaction Between Infection Risk and Age Group",
        x = "Infection Risk",
        y = "Length of Stay")
 
@@ -384,7 +386,7 @@ df$PatGroup = cut(df$Avg.Pat, breaks = 3, labels = c("Low", "Medium", "High"))
 ggplot(df, aes(x = Inf.Risk, y = Lgth.of.Sty, shape = PatGroup)) +
   geom_point(alpha = 0.6) +
   geom_smooth(method = "lm", se = FALSE, aes(group = PatGroup)) +
-  labs(title = "Interaction Between Infection Risk and Patient Load (Shapes)",
+  labs(title = "Interaction Between Infection Risk and Average Patients",
        x = "Infection Risk",
        y = "Length of Stay")
 ```
@@ -395,7 +397,7 @@ Thus, we refit the model to incorporate interactions for Region/Infection Risk a
 
 ```{r}
 fit3 = lm(Lgth.of.Sty ~ Inf.Risk + Age + Region + Avg.Pat + Avg.Nur + R.CX.ray.Rat + Inf.Risk*Region + Inf.Risk*Avg.Pat, data = df)
-
+par(mfrow = c(2, 2))
 plot(fit3)
 summary(fit3)
 vif(fit3, type = "predictor")
@@ -457,6 +459,7 @@ The distributions of the log-transformed variables certainly can't be considered
 
 ```{r}
 fit4 = lm(Lgth.of.Sty ~ Inf.Risk + Age + Region + log_Avg.Pat + log_Avg.Nur + R.CX.ray.Rat + Inf.Risk*Region + Inf.Risk*log_Avg.Pat, data = df)
+par(mfrow = c(2, 2))
 plot(fit4)
 summary(fit4)
 vif(fit4)
@@ -470,7 +473,7 @@ Given the choice between the reduced model with interactions and the log-transfo
 
 ```{r}
 final_inferential_mlr = lm(Lgth.of.Sty ~ Inf.Risk + Age + Region + Avg.Pat + Avg.Nur + R.CX.ray.Rat + Inf.Risk*Region + Inf.Risk*Avg.Pat, data = df)
-
+par(mfrow = c(2, 2))
 plot(final_inferential_mlr)
 summary(final_inferential_mlr)
 ```
