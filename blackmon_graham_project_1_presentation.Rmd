@@ -1,5 +1,5 @@
 ---
-title: "Stats 6372 - Project 1"
+title: "DS6372 - Applied Statistics - Project 1"
 author: "Brittany Blackmon and Eric Graham"
 date: "`r Sys.Date()`"
 output: 
