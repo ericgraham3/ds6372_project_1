@@ -32,12 +32,23 @@ $$
 
 ## Baseline Model - Performance
 
-![Output of Baseline Model](01_baseline_model_output.png)
+![](01_baseline_model_output.png)
 
-## Baseline Model - Fit Diagnostics and VIF
+* RMSE: 1.231
+* R-Squared: 0.6299
+* Adjusted R-Squared: 0.5855
 
-![Fit Diagnostics of Baseline Model](01_baseline_model_diagnostics.png)
+## Baseline Model - Fit Diagnostics
+
+![](01_baseline_model_diagnostics1.png)
+
+![](01_baseline_model_diagnostics2.png)
+
+## VIF of Baseline Model
+
 ![VIF of Baseline Model](01_baseline_model_vif.png)
+
+* Collinearity detected between number of beds and average patients
 
 ## Reduced Model - Statistically Significant Predictors
 
@@ -56,16 +67,26 @@ $$
 
 ![Output of Reduced Model](02_reduced_model_output.png)
 
-## Reduced Model - Fit Diagnostics and VIF
+* RMSE: 1.232
+* R-Squared: 0.6143
+* Adjusted R-Squared: 0.5846
+* Very similar performance to baseline model, but with fewer predictors
 
-![Fit Diagnostics of Reduced Model](02_reduced_model_diagnostics.png)
+## Reduced Model - Fit Diagnostics
+
+![](02_reduced_model_diagnostics1.png)
+
+![](02_reduced_model_diagnostics2.png)
+
+## Reduced Model - VIF
 
 ![VIF of Reduced Model](02_reduced_model_vif.png)
 
 ## Interactions
 
-[](03_reduced_model_interaction1.png)
-[](03_reduced_model_interaction2.png)
+![](03_reduced_model_interaction1.png)
+
+![](03_reduced_model_interaction2.png)
 
 ## Reduced Model with Interactions
 
@@ -86,16 +107,25 @@ $$
 
 ![Output of Reduced Model with Interactions](03_reduced_model_output.png)
 
-## Reduced Model with Interactions - Fit Diagnostics and VIF
+* RMSE: 1.161
+* R-Squared: 0.6705
+* Adjusted R-Squared: 0.6309
+* Improved performance compared to reduced model
+* Strong statistical evidence that interactions are significant
 
-![Fit Diagnostics of Reduced Model with Interactions](03_reduced_model_diagnostics.png)
+## Reduced Model with Interactions - Fit Diagnostics
 
-## Log Transformations
+![](03_reduced_model_diagnostics1.png)
+
+![](03_reduced_model_diagnostics2.png)
+
+## Log Transformation - Average Daily Census
 
 ![](04_raw_trend_1.png)
 
 ![](04_log_trend_1.png)
-##
+
+## Log Transformation - Number of Nurses
 
 ![](04_raw_trend_2.png)
 
@@ -116,11 +146,15 @@ $$
 \beta_8 \cdot \text{Infection Risk} \times \log(\text{Average Daily Census})
 $$
 
-## Model with Log-Transformed Predictors - Performance and Diagnostics
+## Model with Log-Transformed Predictors - Performance
 
 ![Output of Model with Log-Transformed Predictors](04_log_model_⁭output.png)
 
-![Fit Diagnostics for Log-Transformed Model](04_log_model_diagnostics.png)
+## Model with Log-Transformed Predictors - Fit Diagnostics
+
+![](04_log_model_diagnostics1.png)
+
+![](04_log_model_diagnostics2.png)
 
 ## Final Inferential Model
 
@@ -137,9 +171,15 @@ $$
 \beta_8 \cdot \text{Infection Risk} \times \text{Average Daily Census}
 $$
 
+* Best balance between performance, interpretability, and residuals
+* Adjusted R-squared of 0.6309 means that even adjusting for complexity, the model explains 63% of the variance in length of stay
+* Captures the interactions between infection risk and region/average daily census
+
 ## Confidence Interval for Infection Risk
 
 ![Bootstrapped CIs for All Predictors](05_bootstrap_ci.png)
+
+We are 95% certain that for each percentage point increase in infection risk, regardless of other factors, the length of stay increases by approximately .128 to 1.416 days (based on analysis 10000 bootstrapped samples).
 
 # Predictive Model 1: Complex MLR
 
@@ -182,6 +222,9 @@ $$
 ## Random Forest - Performance
 
 ![](07_random_forest_mtry_graph.png)
+
+* RMSE: 1.34683
+* R-Squared: .496
 
 # Model Comparison
 

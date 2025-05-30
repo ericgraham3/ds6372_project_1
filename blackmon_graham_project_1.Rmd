@@ -5,7 +5,7 @@ date: "`r Sys.Date()`"
 output:
   html_document:
     toc: true
-    toc_depth: 2
+    toc_depth: 3
     code_folding: hide
     theme: flatly
 ---
@@ -348,7 +348,7 @@ Overall, the fit diagnostics could be better, but they are acceptable for a firs
 
 ```{r}
 fit2 = lm(Lgth.of.Sty ~ Inf.Risk + Age + Region + Avg.Pat + Avg.Nur + R.CX.ray.Rat, data = df)
-par(mfrow = c(2, 2))
+# par(mfrow = c(2, 2))
 plot(fit2)
 summary(fit2)
 vif(fit2)
@@ -358,7 +358,7 @@ We dropped number of beds (as noted above) as well as medical school affiliation
 
 We also tried dropping routine chest x-ray ratio, which was closer to the threshold of statistical signficance than the other dropped predictors (p-value of 0.08). However, removing it from the model actually lowered our adjusted r-squared value, and in the reduced model its p-value was borderline (0.057, as shown below), so we left it in. 
 
-Fit diagnostics are marginally improved in the reduced model, but not noticeably so. Overall, teh reduced model enhances interpretability by dropping statistically insignificant predictors, but it does not significantly improve the model fit.
+Fit diagnostics are marginally improved in the reduced model, but not noticeably so. Overall, the reduced model enhances interpretability by dropping statistically insignificant predictors, but it does not significantly improve the model fit.
 
 ## Model with Interactions
 
@@ -459,7 +459,7 @@ The distributions of the log-transformed variables certainly can't be considered
 
 ```{r}
 fit4 = lm(Lgth.of.Sty ~ Inf.Risk + Age + Region + log_Avg.Pat + log_Avg.Nur + R.CX.ray.Rat + Inf.Risk*Region + Inf.Risk*log_Avg.Pat, data = df)
-par(mfrow = c(2, 2))
+# par(mfrow = c(2, 2))
 plot(fit4)
 summary(fit4)
 vif(fit4)
