@@ -92,30 +92,106 @@ $$
 
 ## Log Transformations
 
+![](04_raw_trend_1.png)
+
 ![](04_log_trend_1.png)
+##
+
+![](04_raw_trend_2.png)
+
 ![](04_log_trend_2.png)
 
 ## Model with Log-Transformed Predictors
 
-## Final Model
+$$
+\widehat{\text{Length of Stay (days)}} = 
+\beta_0 + 
+\beta_1 \cdot \text{Infection Risk} + 
+\beta_2 \cdot \text{Average Age (years)} + 
+\beta_3 \cdot \text{Region} + 
+\beta_4 \cdot \log(\text{Average Daily Census}) + 
+\beta_5 \cdot \log(\text{Number of Nurses}) + 
+\beta_6 \cdot \text{Routine Chest X-ray Ratio (%)} + 
+\beta_7 \cdot \text{Infection Risk} \times \text{Region} + 
+\beta_8 \cdot \text{Infection Risk} \times \log(\text{Average Daily Census})
+$$
+
+## Model with Log-Transformed Predictors - Performance and Diagnostics
+
+![Output of Model with Log-Transformed Predictors](04_log_model_⁭output.png)
+
+![Fit Diagnostics for Log-Transformed Model](04_log_model_diagnostics.png)
+
+## Final Inferential Model
+
+$$
+\widehat{\text{Length of Stay (days)}} = 
+\beta_0 + 
+\beta_1 \cdot \text{Infection Risk} + 
+\beta_2 \cdot \text{Average Age (years)} + 
+\beta_3 \cdot \text{Region} + 
+\beta_4 \cdot \text{Average Daily Census} + 
+\beta_5 \cdot \text{Number of Nurses} + 
+\beta_6 \cdot \text{Routine Chest X-ray Ratio (%)} + 
+\beta_7 \cdot \text{Infection Risk} \times \text{Region} + 
+\beta_8 \cdot \text{Infection Risk} \times \text{Average Daily Census}
+$$
 
 ## Confidence Interval for Infection Risk
+
+![Bootstrapped CIs for All Predictors](05_bootstrap_ci.png)
 
 # Predictive Model 1: Complex MLR
 
 ## Results of Stepwise Feature Selection
 
+![](06_complex_mlr_stepwise_selection.png)
+
 ## LASSO Regression for Interactions
+
+![](06_complex_mlr_lasso_interactions.png)
+
+## Complex MLR - Model Formula
+
+$$
+\widehat{\text{Length of Stay (days)}} = 
+\beta_0 + 
+\beta_1 \cdot \text{Infection Risk} + 
+\beta_2 \cdot \text{Region} + 
+\beta_3 \cdot \text{Average Daily Census} + 
+\beta_4 \cdot \text{Number of Nurses} + 
+\beta_5 \cdot \text{Routine Chest X-ray Ratio (%)} + 
+\beta_6 \cdot \text{Average Age (years)} + 
+\beta_7 \cdot \text{Medical School Affiliation} + 
+\beta_8 \cdot \text{Number of Beds} + 
+\beta_9 \cdot \text{Infection Risk} \times \text{Average Daily Census} + 
+\beta_{10} \cdot \text{Infection Risk} \times \text{Region} + 
+\beta_{11} \cdot \text{Infection Risk} \times \text{Number of Nurses} + 
+\beta_{12} \cdot \text{Infection Risk} \times \text{Routine Chest X-ray Ratio (%)} + 
+\beta_{13} \cdot \text{Infection Risk} \times \text{Average Age (years)} + 
+\beta_{14} \cdot \text{Medical School Affiliation} \times \text{Region} + 
+\beta_{15} \cdot \text{Number of Beds} \times \text{Region}
+$$
 
 ## Complex MLR - Performance
 
-## Compex MLR - Fit Diagnostics
+![](06_complex_mlr_output.png)
 
 # Predictive Model 2: Random Forest
 
-## Random Forest - Performance and Fit Diagnostics
+## Random Forest - Performance
+
+![](07_random_forest_mtry_graph.png)
 
 # Model Comparison
 
-## Model Comparison
+## Model Comparison Table
 
+| Metric             | Explanatory MLR     | Predictive MLR  | Random Forest (`mtry = 3`) |
+| ------------------ | ------------------- | --------------- | -------------------------- |
+| Adjusted R²        | 0.631               | 0.639           | *NA (CV R² shown below)*   |
+| Cross-Validated R² | *Not reported*      | 0.528           | 0.496                      |
+| RMSE (CV)          | *Not reported*      | 1.366           | **1.347** (lowest)         |
+| MAE (CV)           | *Not reported*      | 1.048           | **1.010** (lowest)         |
+| Model Complexity   | Moderate (12 terms) | High (23 terms) | High (hundreds of trees)   |
+| Interpretability   | **High**            | Moderate        | **Low**                    |
